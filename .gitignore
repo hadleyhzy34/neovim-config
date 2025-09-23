@@ -13,6 +13,7 @@ data
 
 *.json
 /*.json
+*json
 
 # Build artifacts
 /build
