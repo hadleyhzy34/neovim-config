@@ -1,0 +1,275 @@
+return {
+  "rcarriga/nvim-dap-ui",
+  dependencies = {
+    "mfussenegger/nvim-dap",
+    "nvim-neotest/nvim-nio",
+  },
+  enabled = true,
+  -- commit = "3e61767ccf56aa75adc2cb5390334cdb40b4ce05",
+  keys = {
+    ------------------------------------------------------------------
+    -- 1. YOUR NEW KEYBINDINGS (ADDED / MODIFIED)
+    ------------------------------------------------------------------
+    {
+      "<leader>db",
+      function()
+        require("dap").toggle_breakpoint()
+      end,
+      desc = "Toggle Breakpoint",
+    },
+    {
+      "<leader>dn",
+      function()
+        require("dap").step_over()
+      end,
+      desc = "Step Over",
+    },
+    {
+      "<leader>di",
+      function()
+        require("dap").step_into()
+      end,
+      desc = "Step Into",
+    },
+    {
+      "<leader>do",
+      function()
+        require("dap").step_out()
+      end,
+      desc = "Step Out",
+    },
+
+    ------------------------------------------------------------------
+    -- 2. KEPT FROM YOUR CONFIG (with minor improvements)
+    ------------------------------------------------------------------
+    -- Run / Stop controls
+    {
+      "<leader>dc",
+      function()
+        require("dap").continue()
+      end,
+      desc = "Continue",
+    }, -- Changed from <leader>s for consistency
+    {
+      "<leader>dx",
+      function()
+        require("dap").terminate()
+      end,
+      desc = "Terminate",
+    },
+    {
+      "<leader>ds",
+      function()
+        require("dap").load_launchjs()
+      end,
+      desc = "Load launch.json",
+    },
+
+    -- UI controls
+    {
+      "<leader>du",
+      function()
+        require("dapui").toggle()
+      end,
+      desc = "Toggle DAP UI",
+    }, -- A good keybinding to have
+    -- Add keybinding to evaluate expression under cursor
+    {
+      "<leader>de",
+      function()
+        local word = vim.fn.expand("<cword>")
+        if word and word ~= "" then
+          pcall(function()
+            require("dap").repl.put(word)
+          end)
+        end
+      end,
+      desc = "Evaluate expression under cursor",
+    },
+
+    -- Add keybinding to open and focus REPL
+    {
+      "<leader>dR",
+      function()
+        require("dap").repl.open()
+        -- Optionally focus the REPL buffer
+        vim.cmd("wincmd p")
+      end,
+      desc = "Open and focus REPL",
+    },
+    {
+      "<leader>dv",
+      function()
+        require("dapui").float_element("scopes", { enter = true })
+      end,
+      desc = "View Scopes (Float)",
+    },
+    {
+      "<leader>dC",
+      function()
+        require("dapui").float_element("console", { enter = true, width = 100 })
+      end,
+      desc = "View Console (Float)",
+    },
+    {
+      "<leader>dB",
+      function()
+        require("dapui").float_element("breakpoints", { enter = true })
+      end,
+      desc = "View Breakpoints (Float)",
+    },
+    {
+      "<leader>dT",
+      function()
+        require("dapui").float_element("stacks", { enter = true })
+      end,
+      desc = "View Stacks (Float)",
+    },
+    {
+      "<leader>dw",
+      function()
+        require("dapui").float_element("watches", { enter = true })
+      end,
+      desc = "View Watches (Float)",
+    },
+
+    -- -- movements --
+    -- -- { "<leader>e", "<cmd>dapstepover<cr>" },
+    -- { "<leader>s", "<cmd>dapcontinue<cr>" },
+    -- { "<leader>ew", "<cmd>dapstepinto<cr>" },
+    -- { "<leader>eo", "<cmd>dapstepout<cr>" },
+    -- -- run / stop / launch_json --
+    -- { "<leader>d", "<cmd>daptogglebreakpoint<cr>" },
+    -- { "<leader>dx", "<cmd>dapterminate<cr>" },
+    -- { "<leader>ds", "<cmd>daploadlaunchjson<cr>" },
+    -- { "<leader>dt", "<cmd>lua require('dapui').close()<cr>" },
+    -- -- {"<leader>di", "<cmd>dapvirtualtexttoggle<cr>"},
+    -- -- toggle windows --
+    -- { "<leader>dv", "<cmd>lua require('dapui').float_element('scopes', {enter=true})<cr>" },
+    -- { "<leader>dr", "<cmd>daptogglerepl<cr>" },
+    -- { "<leader>dc", "<cmd>lua require('dapui').float_element('console', {enter=true, width=100})<cr>" },
+    -- { "<leader>db", "<cmd>lua require('dapui').float_element('breakpoints', {enter=true})<cr>" },
+    -- { "<leader>dt", "<cmd>lua require('dapui').float_element('stacks', {enter=true})<cr>" },
+    -- { "<leader>dw", "<cmd>lua require('dapui').float_element('watches', {enter=true})<cr>" },
+  },
+  config = function()
+    local dap = require("dap")
+    local dapui = require("dapui")
+    dapui.setup({
+      force_buffers = true,
+      icons = { expanded = "", collapsed = "", current_frame = "." },
+      mappings = {
+        -- use a table to apply multiple mappings
+        expand = { "<cr>", "<2-leftmouse>" },
+        open = "o",
+        remove = "d",
+        edit = "e",
+        repl = "r",
+        toggle = "t",
+      },
+      -- use this to override mappings for specific elements
+      element_mappings = {
+        -- example:
+        -- stacks = {
+        --   open = "<cr>",
+        --   expand = "o",
+        -- }
+      },
+      -- expand_lines = vim.fn.has("nvim-0.7") == 1,
+      layouts = {
+        {
+          elements = {
+            { id = "scopes", size = 0.25 },
+            { id = "breakpoints", size = 0.15 },
+            { id = "stacks", size = 0.15 },
+            { id = "watches", size = 0.45 },
+          },
+          size = 40,
+          position = "left",
+        },
+        {
+          elements = {
+            -- "repl",
+            "console",
+          },
+          size = 0.25,
+          position = "bottom",
+        },
+      },
+      -- layouts = {
+      --   {
+      --     elements = {
+      --       -- elements can be strings or table with id and size keys.
+      --       { id = "scopes", size = 0.25 },
+      --       "breakpoints",
+      --       "stacks",
+      --       "watches",
+      --     },
+      --     size = 40, -- 40 columns
+      --     position = "left",
+      --   },
+      --   {
+      --     elements = {
+      --       -- "repl",
+      --       "console",
+      --       "watches",
+      --     },
+      --     width = 0.5,
+      --     size = 0.25, -- 25% of total lines
+      --     position = "bottom",
+      --   },
+      -- },
+      controls = {
+        -- requires neovim nightly (or 0.8 when released)
+        enabled = false,
+        -- display controls in this element
+        element = "repl",
+        icons = {
+          pause = "",
+          play = "",
+          step_into = "",
+          step_over = "",
+          step_out = "",
+          step_back = "",
+          run_last = "",
+          terminate = "",
+        },
+      },
+      auto_refresh = false,
+      expand_lines = false,
+      floating = {
+        max_height = nil, -- these can be integers or a float between 0 and 1.
+        max_width = nil, -- floats will be treated as percentage of your screen.
+        border = "single", -- border style. can be "single", "double" or "rounded"
+        mappings = {
+          close = { "q", "<esc>" },
+        },
+      },
+      windows = { indent = 1 },
+      render = {
+        max_type_length = nil, -- can be integer or nil.
+        max_value_lines = 100, -- can be integer or nil.
+      },
+    })
+    dap.listeners.before.attach.dapui_config = function()
+      -- dapui.close({ layout = 2 })
+      -- dapui.open({ layout = 2 })
+      dapui.close({ layout = 1 })
+      dapui.open({ layout = 1 })
+    end
+    dap.listeners.before.launch.dapui_config = function()
+      -- dapui.close({ layout = 2 })
+      -- dapui.open({ layout = 2 })
+      dapui.close({ layout = 1 })
+      dapui.open({ layout = 1 })
+    end
+    dap.listeners.before.event_terminated.dapui_config = function()
+      -- dapui.close({ layout = 2 })
+      dapui.close({ layout = 1 })
+    end
+    dap.listeners.before.event_exited.dapui_config = function()
+      -- dapui.close({ layout = 2 })
+      dapui.close({ layout = 1 })
+    end
+  end,
+}

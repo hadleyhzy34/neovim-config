@@ -1,0 +1,28 @@
+tt.*
+.tests
+doc/tags
+debug
+.repro
+foo.*
+*.log
+data
+# Dependencies
+/node_modules
+/vendor
+/venv
+
+# Build artifacts
+/build
+/dist
+/target
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# IDE and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
