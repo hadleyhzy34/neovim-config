@@ -11,6 +11,9 @@ data
 /vendor
 /venv
 
+*.json
+/*.json
+
 # Build artifacts
 /build
 /dist
