@@ -38,6 +38,18 @@ return {
       end,
       desc = "Step Out",
     },
+    -- Based on my research, the function to clear/remove all breakpoints in nvim-dap is:
+    --  require('dap').clear_breakpoints()
+    --  This function will clear all breakpoints in all files. If you want to clear breakpoints in a specific file, you can pass the filename as an argument:
+    --  require('dap').clear_breakpoints(filename)
+    {
+      "<leader>da",
+      function()
+        require("dap").clear_breakpoints()
+      end,
+      desc = "Clear All Breakpoints",
+    },
+    -- 1 vim.keymap.set('n', '<leader>dca', require('dap').clear_breakpoints, { desc = 'Clear all breakpoints' })
 
     ------------------------------------------------------------------
     -- 2. KEPT FROM YOUR CONFIG (with minor improvements)
@@ -155,6 +167,105 @@ return {
   config = function()
     local dap = require("dap")
     local dapui = require("dapui")
+
+    -- Configure default settings for all adapters
+    dap.defaults.fallback.force_external_console = false
+    dap.defaults.fallback.terminal_win_cmd = "enew"
+
+    -- Setup exception breakpoints to avoid getting stuck in standard library
+    dap.defaults.exception_breakpoints = {
+      cpp = {
+        {
+          name = "C++ Exceptions",
+          condition = nil,
+          expression = "_CxxThrowException",
+          description = "Break on C++ exceptions",
+        },
+      },
+    }
+
+    -- Configure DAP to skip standard library functions
+    dap.configurations.cpp = dap.configurations.cpp or {}
+
+    -- Add keybinding to step out when stuck in assembly
+    vim.keymap.set("n", "<leader>dO", function()
+      dap.step_out()
+    end, { desc = "Step Out (use when stuck in assembly)" })
+
+    -- Add keybinding to continue execution when stuck in assembly
+    vim.keymap.set("n", "<leader>dC", function()
+      dap.continue()
+    end, { desc = "Continue (use when stuck in assembly)" })
+
+    -- Add a function to reset debugging session if stuck
+    vim.keymap.set("n", "<leader>dR", function()
+      dap.terminate()
+      vim.defer_fn(function()
+        dap.continue()
+      end, 1000)
+    end, { desc = "Reset Debug Session" })
+
+    -- Add keybinding for exception breakpoints
+    vim.keymap.set("n", "<leader>dE", function()
+      dap.set_exception_breakpoint("cpp_throw", "C++ Exceptions")
+    end, { desc = "Set C++ Exception Breakpoint" })
+
+    -- Configure DAP to automatically skip standard library functions
+    local function setup_cpp_config()
+      for _, config in ipairs(dap.configurations.cpp or {}) do
+        config.skipFiles = config.skipFiles or {}
+        local skip_patterns = {
+          "**/usr/include/c++/**",
+          "**/usr/include/**",
+          "**/usr/lib/**",
+          "**/usr/lib/x86_64-linux-gnu/**",
+          "<*>",
+        }
+        for _, pattern in ipairs(skip_patterns) do
+          table.insert(config.skipFiles, pattern)
+        end
+      end
+    end
+
+    setup_cpp_config()
+
+    -- Setup automatic exception handling to avoid getting stuck in __cxa_throw
+    vim.api.nvim_create_autocmd("FileType", {
+      pattern = "cpp,c",
+      callback = function()
+        -- Set exception breakpoints automatically
+        vim.defer_fn(function()
+          pcall(function()
+            dap.set_exception_breakpoint("cpp_throw", "C++ Exceptions")
+          end)
+        end, 1000)
+      end,
+    })
+
+    -- Add configuration to prevent stepping into assembly
+    dap.defaults.fallback.source_filetype = "cpp"
+    dap.defaults.fallback.disassembly = false
+
+    -- Configure step filtering to avoid standard library functions
+    dap.defaults.fallback.step_filter = {
+      -- Filter out standard library functions
+      "std::",
+      "__cxxabiv1::",
+      "__gnu_cxx::",
+      "__cxa_",
+      "_ZSt",
+      "_ZNSt",
+      -- Add specific function names that cause issues
+      "__cxa_throw",
+      "__cxa_rethrow",
+      "__cxa_allocate_exception",
+      "__cxa_free_exception",
+      "__cxa_begin_catch",
+      "__cxa_end_catch",
+      "__cxa_call_unexpected",
+      "__cxa_call_terminate",
+    }
+
     dapui.setup({
       force_buffers = true,
       icons = { expanded = "", collapsed = "", current_frame = "." },
@@ -166,6 +277,13 @@ return {
         edit = "e",
         repl = "r",
         toggle = "t",
+      },
+      -- Configure to skip standard library in UI
+      skip_scopes = {
+        "std::",
+        "__gnu_cxx::",
+        "__cxxabiv1::",
+        "boost::",
       },
       -- use this to override mappings for specific elements
       element_mappings = {
@@ -273,4 +391,3 @@ return {
     end
   end,
 }
-

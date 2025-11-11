@@ -1,0 +1,98 @@
+-- Enhanced C++ DAP configuration
+return {
+  "mfussenegger/nvim-dap",
+  config = function()
+    local dap = require("dap")
+
+    -- Ensure CodeLLDB adapter is properly configured
+    dap.adapters.codelldb = {
+      type = "server",
+      port = "${port}",
+      executable = {
+        command = "codelldb",
+        args = { "--port", "${port}" },
+      },
+    }
+
+    -- Enhanced C++ configuration with better skip settings
+    dap.configurations.cpp = {
+      {
+        name = "Launch file",
+        type = "codelldb",
+        request = "launch",
+        program = function()
+          return vim.fn.input("Path to executable: ", vim.fn.getcwd() .. "/", "file")
+        end,
+        cwd = "${workspaceFolder}",
+        stopOnEntry = false,
+        args = {},
+        runInTerminal = false,
+        -- Enhanced skip files configuration
+        skipFiles = {
+          "**/usr/include/c++/**",
+          "**/usr/include/**",
+          "**/usr/lib/**",
+          "**/usr/lib/x86_64-linux-gnu/**",
+          "<*>",
+        },
+        -- Disable disassembly view
+        disassembly = false,
+        -- Step filtering to prevent entering standard library
+        stepFilter = {
+          "__cxa_throw",
+          "__cxa_rethrow",
+          "__cxa_allocate_exception",
+          "__cxa_free_exception",
+          "__cxa_begin_catch",
+          "__cxa_end_catch",
+          "__cxa_call_unexpected",
+          "__cxa_call_terminate",
+          "std::",
+          "__gnu_cxx::",
+          "__cxxabiv1::",
+        },
+        -- Source mapping to ensure proper source file resolution
+        sourceMap = {
+          ["/usr/include/c++"] = "/usr/include/c++",
+          ["/usr/include"] = "/usr/include",
+        },
+        -- Break on exception throw, not in implementation
+        exceptionBreakpointFilters = {
+          {
+            filter = "cpp_throw",
+            label = "C++ Exceptions",
+            default = true,
+          }
+        },
+      },
+    }
+
+    -- Also configure for C and Rust
+    dap.configurations.c = dap.configurations.cpp
+    dap.configurations.rust = dap.configurations.cpp
+
+    -- Set up automatic exception breakpoints
+    vim.api.nvim_create_autocmd("FileType", {
+      pattern = "cpp,c",
+      callback = function()
+        -- Set exception breakpoints automatically
+        vim.defer_fn(function()
+          pcall(function()
+            -- Break on C++ exceptions being thrown
+            dap.set_exception_breakpoint("cpp_throw", "C++ Exceptions")
+          end)
+        end, 1000)
+      end,
+    })
+
+    -- Add keybinding to force return to source code
+    vim.keymap.set('n', '<leader>dF', function()
+      -- Try to step out multiple times to escape assembly
+      for i = 1, 5 do
+        pcall(function()
+          dap.step_out()
+        end)
+      end
+    end, { desc = "Force Return to Source Code" })
+  end
+}

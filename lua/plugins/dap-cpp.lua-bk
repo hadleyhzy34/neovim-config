@@ -1,0 +1,57 @@
+-- C++ DAP configuration
+local M = {
+  "mfussenegger/nvim-dap",
+}
+
+function M.config()
+  local dap = require("dap")
+
+  -- C++ configuration using CodeLLDB
+  dap.adapters.codelldb = {
+    type = "server",
+    port = "${port}",
+    executable = {
+      command = "codelldb",
+      args = { "--port", "${port}" },
+    },
+  }
+
+  dap.configurations.cpp = {
+    {
+      name = "Launch file",
+      type = "codelldb",
+      request = "launch",
+      program = function()
+        return vim.fn.input("Path to executable: ", vim.fn.getcwd() .. "/", "file")
+      end,
+      cwd = "${workspaceFolder}",
+      stopOnEntry = false,
+      args = {},
+      runInTerminal = false,
+      -- Skip standard library functions
+      skipFiles = {
+        "**/usr/include/c++/**",
+        "**/usr/include/**",
+        "**/usr/lib/**",
+        "<*>",
+      },
+    },
+  }
+
+  -- Also configure for C and Rust
+  dap.configurations.c = dap.configurations.cpp
+  dap.configurations.rust = dap.configurations.cpp
+  
+  -- Setup exception breakpoints to avoid stepping into standard library
+  vim.api.nvim_create_autocmd("FileType", {
+    pattern = "cpp,c",
+    callback = function()
+      -- Set exception breakpoints to catch C++ exceptions
+      vim.keymap.set("n", "<leader>de", function()
+        dap.set_exception_breakpoint("cpp_throw", "C++ Exceptions")
+      end, { buffer = 0, desc = "Set C++ Exception Breakpoint" })
+    end,
+  })
+end
+
+return M
