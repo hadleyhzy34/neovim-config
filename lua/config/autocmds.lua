@@ -14,3 +14,29 @@ vim.api.nvim_create_autocmd("FileType", {
     vim.opt_local.wrap = false
   end,
 })
+-- Guard against a deleted working directory.
+--
+-- libuv's uv.cwd() returns nil ("ENOENT") when the process working directory
+-- has been deleted/renamed on disk (e.g. a git worktree that was removed, or a
+-- build/tmp dir cleaned up while nvim was open). LazyVim.root() falls back to
+-- uv.cwd() for unnamed buffers and hands it to vim.fs.find, which asserts
+-- uv.cwd() and throws E5108 "ENOENT: no such file or directory" -- breaking the
+-- snacks explorer (<leader>e) and Find Files (<leader><space>). Self-heal by
+-- :cd-ing to ~ so root detection works again.
+local function ensure_cwd()
+  if vim.uv.cwd() ~= nil then
+    return
+  end
+  pcall(vim.cmd, "cd ~")
+  vim.notify("Working directory was missing — reset to ~. Run :cd to switch back.", vim.log.levels.WARN)
+end
+
+-- Fix immediately (this file loads on VeryLazy, after startup).
+ensure_cwd()
+
+-- No Neovim event fires when the cwd is deleted externally, so poll for it.
+local timer = vim.uv.new_timer()
+timer:start(10000, 10000, function()
+  vim.schedule(ensure_cwd)
+end)
+

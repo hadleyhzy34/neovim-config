@@ -76,3 +76,7 @@ keymap.set("n", "sd", "ds", { remap = true })
 keymap.set("n", "<leader>z", function()
   require("conform").format({ async = true, lsp_fallback = true })
 end, { desc = "Format file with conform.nvim" })
+
+keymap.set("n", "<leader>jf", function()
+  require("syntax-tree-surfer.goto").jump_to_function_start()
+end, { desc = "Jump to function start" })
