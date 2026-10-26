@@ -72,3 +72,7 @@ keymap.set("n", "<C-w><down>", "<C-w>-")
 keymap.set("n", "sa", "ys", { remap = true })
 keymap.set("n", "sr", "cs", { remap = true })
 keymap.set("n", "sd", "ds", { remap = true })
+
+keymap.set("n", "<leader>z", function()
+  require("conform").format({ async = true, lsp_fallback = true })
+end, { desc = "Format file with conform.nvim" })
