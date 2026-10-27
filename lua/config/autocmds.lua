@@ -40,3 +40,20 @@ timer:start(10000, 10000, function()
   vim.schedule(ensure_cwd)
 end)
 
+-- Custom cursorline and line number highlight contrast
+local function set_cursorline_highlights()
+  vim.api.nvim_set_hl(0, "CursorLine", {
+    bg = "#112e4d",
+  })
+  vim.api.nvim_set_hl(0, "CursorLineNr", {
+    fg = "#ffcb6b",
+    bold = true,
+  })
+end
+
+vim.api.nvim_create_autocmd("ColorScheme", {
+  pattern = "*",
+  callback = set_cursorline_highlights,
+})
+
+set_cursorline_highlights()
